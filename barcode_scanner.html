@@ -39,9 +39,30 @@
             console.warn(`Code scan error = ${error}`);
         }
 
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", { fps: 10, qrbox: { width: 250, height: 250 } });
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        // Функция инициализации сканера
+        function initializeScanner() {
+            let html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", { fps: 10, qrbox: { width: 250, height: 250 } }
+            );
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        }
+
+        // Проверка загрузки скриптов и инициализация
+        document.addEventListener("DOMContentLoaded", (event) => {
+            console.log("DOM fully loaded and parsed");
+            if (typeof Html5QrcodeScanner !== 'undefined') {
+                initializeScanner();
+            } else {
+                console.error("Html5QrcodeScanner is not loaded");
+            }
+
+            if (typeof tg !== 'undefined') {
+                tg.ready();
+                console.log("Telegram WebApp is ready");
+            } else {
+                console.error("Telegram WebApp is not loaded");
+            }
+        });
     </script>
 </body>
 </html>
