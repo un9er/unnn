@@ -6,10 +6,25 @@
     <title>Barcode Scanner</title>
     <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #reader {
+            width: 300px;
+            height: 300px;
+        }
+    </style>
 </head>
 <body>
     <h1>Scan Barcode</h1>
-    <div id="reader" style="width:300px"></div>
+    <div id="reader"></div>
     <script>
         const tg = window.Telegram.WebApp;
 
@@ -25,7 +40,7 @@
         }
 
         let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", { fps: 10, qrbox: 250 });
+            "reader", { fps: 10, qrbox: { width: 250, height: 250 } });
         html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     </script>
 </body>
