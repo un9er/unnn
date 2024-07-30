@@ -1,37 +1,76 @@
-<!-- static/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scan Barcode</title>
+    <title>QR Scanner</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        Telegram.WebApp.ready();
+
+        function scanQRCode() {
+            Telegram.WebApp.showScanQrPopup({}, (qrText) => {
+                if (qrText) {
+                    sendQRDataToBot(qrText);
+                }
+            });
+        }
+
+        function sendQRDataToBot(qrText) {
+            const botUrl = 'https://your-server.com/api/send-qr-data'; // URL вашего сервера для обработки данных
+
+            fetch(botUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: Telegram.WebApp.initDataUnsafe.user.id,
+                    qr_text: qrText
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                Telegram.WebApp.close();
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f7;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-    <h1>Scan Barcode</h1>
-    <form id="upload-form">
-        <input type="file" id="file-input" accept="image/*">
-        <button type="submit">Scan</button>
-    </form>
-    <div id="result"></div>
-    <script>
-        document.getElementById('upload-form').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const fileInput = document.getElementById('file-input');
-            if (fileInput.files.length === 0) {
-                alert('Please select a file.');
-                return;
-            }
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
-            const response = await fetch('/scan', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            document.getElementById('result').textContent = JSON.stringify(result.barcodes);
-        });
-    </script>
+    <h1>QR Scanner</h1>
+    <button onclick="scanQRCode()">Scan QR Code</button>
 </body>
 </html>
 
