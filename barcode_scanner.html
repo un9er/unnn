@@ -1,41 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barcode Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
-</head>
-<body>
-    <h1>Scan Barcode</h1>
-    <div id="reader" style="width:300px"></div>
-    <script>
-        const botToken = '6428748639:AAGSz5FY-lS1BYN0iqjPI6TJ8_7DV9y2ehg';
-        const chatId = '637226094'; // Замените на chat_id, полученный из бота
 
-        function onScanSuccess(decodedText, decodedResult) {
-            // Отправка отсканированного штрих-кода обратно в Telegram бот
-            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: `barcode:${decodedText}`
-                })
-            }).then(response => response.json())
-            .then(data => console.log(data))
-            .catch(error => console.error('Error:', error));
-        }
-
-        function onScanFailure(error) {
-            // Обработка ошибки сканирования
-            console.warn(`Code scan error = ${error}`);
-        }
-
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", { fps: 10, qrbox: 250 });
         html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     </script>
 </body>
