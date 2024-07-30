@@ -29,7 +29,8 @@
                 },
                 body: JSON.stringify({
                     user_id: Telegram.WebApp.initDataUnsafe.user.id,
-                    qr_text: qrText
+                    qr_text: qrText,
+                    chat_id: Telegram.WebApp.initDataUnsafe.chat.id
                 })
             })
             .then(response => response.json())
@@ -76,3 +77,4 @@
     <button onclick="scanQRCode()">Scan QR Code</button>
 </body>
 </html>
+
