@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>QR Code Scanner</title>
+    <title>Barcode Scanner</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
@@ -18,15 +18,42 @@
         const tg = window.Telegram.WebApp;
         tg.ready();
 
-        const html5QrCode = new Html5Qrcode("reader");
-        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-            tg.sendData(decodedText);
+        const startScanner = () => {
+            const html5QrCode = new Html5Qrcode("reader");
+            const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                tg.sendData(decodedText);
+            };
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.QR_CODE,
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.UPC_A,
+                    Html5QrcodeSupportedFormats.UPC_E
+                ]
+            };
+
+            html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+                .catch(err => console.log(`Unable to start scanning, error: ${err}`));
         };
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-        
-        html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
-            .catch(err => console.log(`Unable to start scanning, error: ${err}`));
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    // Сразу останавливаем стрим после получения разрешения
+                    stream.getTracks().forEach(track => track.stop());
+                    startScanner();
+                })
+                .catch(err => {
+                    console.log(`Error getting user media: ${err}`);
+                    alert('Error accessing the camera: ' + err.message);
+                });
+        } else {
+            console.log("getUserMedia not supported on your browser!");
+            alert("Your browser does not support camera access!");
+        }
     </script>
 </body>
 </html>
-
