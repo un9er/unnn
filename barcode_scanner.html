@@ -10,42 +10,23 @@
 
         function scanQRCode() {
             console.log('Opening QR scanner...');
-            Telegram.WebApp.showScanQrPopup({}, (qrText) => {
+            Telegram.WebApp.showScanQrPopup({
+                text: "Scan QR code"
+            }, (result) => {
                 console.log('QR scanner callback triggered.');
-                if (qrText) {
-                    console.log('QR Code Text:', qrText);
-                    sendQRDataToBot(qrText);
+                if (result && result.data) {
+                    console.log('QR Code Text:', result.data);
+                    document.getElementById('qrResult').innerText = `Scanned QR Code: ${result.data}`;
+                    Telegram.WebApp.sendData(result.data); // Отправка данных в бот
                 } else {
                     console.log('No QR Code detected.');
                 }
             });
         }
 
-        function sendQRDataToBot(qrText) {
-            const botUrl = 'https://4334-95-163-143-160.ngrok-free.app/api/send-qr-data'; // Замените на ваш ngrok URL
-
-            console.log('Sending QR data to bot:', qrText);
-
-            fetch(botUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_id: Telegram.WebApp.initDataUnsafe.user.id,
-                    qr_text: qrText,
-                    chat_id: Telegram.WebApp.initDataUnsafe.chat.id
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data);
-                Telegram.WebApp.close();
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
-        }
+        window.addEventListener('DOMContentLoaded', (event) => {
+            document.getElementById('scanButton').addEventListener('click', scanQRCode);
+        });
     </script>
     <style>
         body {
@@ -74,11 +55,16 @@
         button:hover {
             background-color: #0056b3;
         }
+        #qrResult {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
     </style>
 </head>
 <body>
     <h1>QR Scanner</h1>
-    <button onclick="scanQRCode()">Scan QR Code</button>
+    <button id="scanButton">Scan QR Code</button>
+    <div id="qrResult"></div>
 </body>
 </html>
-
