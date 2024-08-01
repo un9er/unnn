@@ -1,32 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Scanner</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.0.5/minified/html5-qrcode.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>QR Code Scanner</title>
 </head>
 <body>
-  <h1>QR Scanner</h1>
-  <div id="reader" style="width: 300px;"></div>
+    <h1>QR Code Scanner</h1>
+    <button id="scan-button">Scan QR Code</button>
 
-  <script>
-    Telegram.WebApp.ready();
+    <script>
+        document.getElementById('scan-button').addEventListener('click', () => {
+            Telegram.WebApp.showScanQrPopup().then(data => {
+                if (data) {
+                    Telegram.WebApp.sendData(data);
+                }
+            }).catch(err => {
+                console.error('Error scanning QR code:', err);
+            });
+        });
 
-    function onScanSuccess(decodedText, decodedResult) {
-      // Отправляем данные обратно в бота
-      Telegram.WebApp.sendData(decodedText);
-    }
-
-    function onScanFailure(error) {
-      // handle scan failure, usually better to ignore and keep scanning
-      console.warn(`QR error: ${error}`);
-    }
-
-    let html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader", { fps: 10, qrbox: 250 });
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-  </script>
+        Telegram.WebApp.ready();
+    </script>
 </body>
 </html>
