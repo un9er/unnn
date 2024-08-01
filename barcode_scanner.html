@@ -47,7 +47,7 @@
                     startScanner();
                 })
                 .catch(err => {
-                    console.log(`Error getting user media: ${err}`);
+                    console.log(`Error accessing the camera: ${err}`);
                     alert('Error accessing the camera: ' + err.message);
                 });
         } else {
@@ -57,3 +57,4 @@
     </script>
 </body>
 </html>
+
