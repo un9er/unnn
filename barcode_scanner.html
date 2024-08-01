@@ -11,6 +11,7 @@
         function scanQRCode() {
             console.log('Opening QR scanner...');
             Telegram.WebApp.showScanQrPopup({}, (qrText) => {
+                console.log('QR scanner callback triggered.');
                 if (qrText) {
                     console.log('QR Code Text:', qrText);
                     sendQRDataToBot(qrText);
@@ -21,7 +22,7 @@
         }
 
         function sendQRDataToBot(qrText) {
-            const botUrl = 'https://e65e-95-163-143-160.ngrok-free.app/'; // Замените на ваш ngrok URL
+            const botUrl = 'https://e65e-95-163-143-160.ngrok-free.app/api/send-qr-data'; // Замените на ваш ngrok URL
 
             console.log('Sending QR data to bot:', qrText);
 
@@ -80,4 +81,5 @@
     <button onclick="scanQRCode()">Scan QR Code</button>
 </body>
 </html>
+
 
