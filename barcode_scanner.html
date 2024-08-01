@@ -20,10 +20,12 @@
 
         const html5QrCode = new Html5Qrcode("reader");
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-            tg.sendData(decodedText);
+            const urlParams = new URLSearchParams(window.location.search);
+            const context = urlParams.get('context');
+            tg.sendData(JSON.stringify({context: context, data: decodedText}));
         };
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-        
+
         html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
             .catch(err => console.log(`Unable to start scanning, error: ${err}`));
     </script>
