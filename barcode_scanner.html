@@ -6,28 +6,40 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
-        #reader {
+        #reader, #actions {
             width: 100%;
-            height: 100vh;
+        }
+        #actions {
+            position: absolute;
+            bottom: 20px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div id="reader"></div>
+    <div id="actions">
+        <button onclick="confirmScan()">Подтвердить</button>
+    </div>
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
+        let scannedProducts = [];
 
         const html5QrCode = new Html5Qrcode("reader");
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const context = urlParams.get('context');
-            tg.sendData(JSON.stringify({context: context, data: decodedText}));
+            scannedProducts.push(decodedText);
+            console.log(`Scanned: ${decodedText}`);
         };
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
         html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
-            .catch(err => console.log(Unable to start scanning, error: ${err}));
+            .catch(err => console.log(`Unable to start scanning, error: ${err}`));
+
+        function confirmScan() {
+            tg.sendData(JSON.stringify({context: 'sale', data: scannedProducts}));
+            html5QrCode.stop().then(() => console.log("Scanning stopped"));
+        }
     </script>
 </body>
 </html>
