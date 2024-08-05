@@ -10,47 +10,45 @@
             width: 100%;
             height: 100vh;
         }
-        #confirm {
+        #confirm-button {
             position: fixed;
-            bottom: 10px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             padding: 10px 20px;
-            font-size: 18px;
-            background-color: #007bff;
+            background-color: #28a745;
             color: white;
             border: none;
+            border-radius: 5px;
             cursor: pointer;
-            display: none;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
     <div id="reader"></div>
-    <button id="confirm">Подтвердить</button>
+    <button id="confirm-button">Подтвердить</button>
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
 
-        let scannedCodes = [];
+        const scannedBarcodes = new Set();
 
         const html5QrCode = new Html5Qrcode("reader");
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-            if (!scannedCodes.includes(decodedText)) {
-                scannedCodes.push(decodedText);
-                tg.sendData(JSON.stringify({context: "sale", data: scannedCodes}));
-                alert("Штрих-код отсканирован: " + decodedText + "\nСканируйте следующий или нажмите Подтвердить.");
-                document.getElementById('confirm').style.display = 'block';
-            }
+            scannedBarcodes.add(decodedText);
         };
+
+        document.getElementById('confirm-button').addEventListener('click', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const context = urlParams.get('context');
+            tg.sendData(JSON.stringify({context: context, data: Array.from(scannedBarcodes)}));
+        });
+
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
         html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
             .catch(err => console.log(`Unable to start scanning, error: ${err}`));
-
-        document.getElementById('confirm').addEventListener('click', () => {
-            tg.sendData(JSON.stringify({context: "confirm", data: scannedCodes}));
-        });
     </script>
 </body>
 </html>
