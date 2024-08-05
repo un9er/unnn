@@ -29,6 +29,7 @@
         const html5QrCode = new Html5Qrcode("reader");
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
             scannedProducts.push(decodedText);
+            alert(`Штрих-код ${decodedText} успешно считан!`); // Уведомление о считывании
             console.log(`Scanned: ${decodedText}`);
         };
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
