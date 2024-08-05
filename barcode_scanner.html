@@ -38,6 +38,8 @@
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
             if (!scannedCodes.includes(decodedText)) {
                 scannedCodes.push(decodedText);
+                tg.sendData(JSON.stringify({context: "sale", data: scannedCodes}));
+                alert("Штрих-код отсканирован: " + decodedText + "\nСканируйте следующий или нажмите Подтвердить.");
                 document.getElementById('confirm').style.display = 'block';
             }
         };
@@ -47,9 +49,7 @@
             .catch(err => console.log(`Unable to start scanning, error: ${err}`));
 
         document.getElementById('confirm').addEventListener('click', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const context = urlParams.get('context');
-            tg.sendData(JSON.stringify({context: context, data: scannedCodes}));
+            tg.sendData(JSON.stringify({context: "confirm", data: scannedCodes}));
         });
     </script>
 </body>
