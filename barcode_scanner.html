@@ -25,12 +25,18 @@
         const tg = window.Telegram.WebApp;
         tg.ready();
         let scannedProducts = [];
+        const urlParams = new URLSearchParams(window.location.search);
+        const context = urlParams.get('context');
 
         const html5QrCode = new Html5Qrcode("reader");
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-            scannedProducts.push(decodedText);
-            alert(`Штрих-код ${decodedText} успешно считан!`); // Уведомление о считывании
-            console.log(`Scanned: ${decodedText}`);
+            if (context === 'sale') {
+                scannedProducts.push(decodedText);
+                alert(`Штрих-код ${decodedText} успешно считан!`);
+            } else {
+                tg.sendData(JSON.stringify({context: context, data: decodedText}));
+                html5QrCode.stop().then(() => console.log("Scanning stopped"));
+            }
         };
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
@@ -38,9 +44,12 @@
             .catch(err => console.log(`Unable to start scanning, error: ${err}`));
 
         function confirmScan() {
-            tg.sendData(JSON.stringify({context: 'sale', data: scannedProducts}));
-            html5QrCode.stop().then(() => console.log("Scanning stopped"));
+            if (context === 'sale') {
+                tg.sendData(JSON.stringify({context: 'sale', data: scannedProducts}));
+                html5QrCode.stop().then(() => console.log("Scanning stopped"));
+            }
         }
     </script>
 </body>
 </html>
+
