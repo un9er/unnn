@@ -15,23 +15,26 @@
             text-align: center;
         }
         .success-animation {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-size: 24px;
             color: #34C759;
-            animation: success-animation 1s ease-in-out;
         }
-        @keyframes success-animation {
-            0% {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(0.5);
-            }
-            100% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-            }
+        .success-animation i {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .success-animation p {
+            font-size: 24px;
+            text-align: center;
         }
         .highlight {
             position: absolute;
@@ -57,9 +60,6 @@
     <div id="actions">
         <button onclick="confirmScan()">Подтвердить</button>
     </div>
-    <div class="success-animation" id="success-animation">
-        <i class="fas fa-check-circle"></i>
-    </div>
     <script>
         const tg = window.Telegram.WebApp;
         tg.ready();
@@ -71,7 +71,7 @@
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
             if (context === 'sale') {
                 scannedProducts.push(decodedText);
-                showSuccessAnimation();
+                showSuccessAnimation(decodedText);
                 highlightCode(decodedText);
             } else {
                 tg.sendData(JSON.stringify({context: context, data: decodedText}));
@@ -90,12 +90,17 @@
             }
         }
 
-        function showSuccessAnimation() {
-            const successAnimation = document.getElementById('success-animation');
-            successAnimation.classList.add('active');
+        function showSuccessAnimation(decodedText) {
+            const successAnimation = document.createElement('div');
+            successAnimation.classList.add('success-animation');
+            successAnimation.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <p>Штрих-код ${decodedText} успешно считан!</p>
+            `;
+            document.body.appendChild(successAnimation);
             setTimeout(() => {
-                successAnimation.classList.remove('active');
-            }, 1000);
+                document.body.removeChild(successAnimation);
+            }, 2000);
         }
 
         function highlightCode(code) {
