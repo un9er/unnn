@@ -6,26 +6,59 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
-        body, html { height: 100%; margin: 0; overflow: hidden; background-color: rgba(0,0,0,0.5); }
-        #reader {
-            width: 100%; height: 100%; position: relative; display: flex; justify-content: center; align-items: center;
-            background: rgba(0, 0, 0, 0.5);
-        }
-        #qrbox-container {
-            width: 250px; height: 250px; position: relative;
-            box-shadow: 0 0 0 9999em rgba(0, 0, 0, 0.75);
+        #reader, #actions {
+            width: 100%;
         }
         #actions {
-            position: absolute; bottom: 20px; width: 100%; text-align: center; z-index: 10;
+            position: absolute;
+            bottom: 20px;
+            text-align: center;
+        }
+        .success-animation {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: #34C759;
+            animation: success-animation 1s ease-in-out;
+        }
+        @keyframes success-animation {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        .highlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #34C759;
+            animation: highlight-animation 1s ease-in-out;
+        }
+        @keyframes highlight-animation {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="reader">
-        <div id="qrbox-container"></div>
-    </div>
+    <div id="reader"></div>
     <div id="actions">
         <button onclick="confirmScan()">Подтвердить</button>
+    </div>
+    <div class="success-animation" id="success-animation">
+        <i class="fas fa-check-circle"></i>
     </div>
     <script>
         const tg = window.Telegram.WebApp;
@@ -34,11 +67,12 @@
         const urlParams = new URLSearchParams(window.location.search);
         const context = urlParams.get('context');
 
-        const html5QrCode = new Html5Qrcode("qrbox-container");
+        const html5QrCode = new Html5Qrcode("reader");
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
             if (context === 'sale') {
                 scannedProducts.push(decodedText);
-                alert(`Штрих-код ${decodedText} успешно считан!`);
+                showSuccessAnimation();
+                highlightCode(decodedText);
             } else {
                 tg.sendData(JSON.stringify({context: context, data: decodedText}));
                 html5QrCode.stop().then(() => console.log("Scanning stopped"));
@@ -50,12 +84,29 @@
             .catch(err => console.log(`Unable to start scanning, error: ${err}`));
 
         function confirmScan() {
-            if (context === 'sale') {
+            if (context === 'sale' && scannedProducts.length > 0) {
                 tg.sendData(JSON.stringify({context: 'sale', data: scannedProducts}));
                 html5QrCode.stop().then(() => console.log("Scanning stopped"));
             }
         }
+
+        function showSuccessAnimation() {
+            const successAnimation = document.getElementById('success-animation');
+            successAnimation.classList.add('active');
+            setTimeout(() => {
+                successAnimation.classList.remove('active');
+            }, 1000);
+        }
+
+        function highlightCode(code) {
+            const reader = document.getElementById('reader');
+            const highlight = document.createElement('div');
+            highlight.classList.add('highlight');
+            reader.appendChild(highlight);
+            setTimeout(() => {
+                reader.removeChild(highlight);
+            }, 1000);
+        }
     </script>
 </body>
 </html>
-
