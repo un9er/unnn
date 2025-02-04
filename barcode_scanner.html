@@ -1,58 +1,61 @@
-from flask import Flask, request, jsonify, render_template
-import requests
-import logging
-import os
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Сканер QR-кодов</title>
+    <!-- Подключаем html5-qrcode -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #reader { width: 500px; margin: auto; }
+        h1 { text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Сканер QR-кодов</h1>
+    <div id="reader"></div>
+    <p id="result" style="text-align: center; font-size: 1.2em;"></p>
+    <script>
+        // Передаем chat_id из шаблона
+        const chatId = "{{ chat_id }}";
 
-app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
+        // Функция, вызываемая при успешном сканировании
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`Сканирование успешно: ${decodedText}`);
+            document.getElementById("result").innerText = "Сканировано: " + decodedText;
+            // Останавливаем сканер
+            html5QrcodeScanner.clear().then(_ => {
+                // Отправляем результат на сервер
+                fetch("/result", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: chatId, result: decodedText })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        document.getElementById("result").innerText += "\nРезультат отправлен в Telegram.";
+                    } else {
+                        document.getElementById("result").innerText += "\nОшибка: " + data.error;
+                    }
+                })
+                .catch(error => {
+                    console.error("Ошибка:", error);
+                    document.getElementById("result").innerText += "\nОшибка при отправке результата.";
+                });
+            }).catch(error => {
+                console.error("Ошибка остановки сканера:", error);
+            });
+        }
 
-# Получаем Telegram Bot Token из переменных окружения
-TELEGRAM_BOT_TOKEN = os.environ.get("8151880981:AAEayzwTCLGVCN26GqTg0Tnn5MgxwMeJ9mc")
-if not TELEGRAM_BOT_TOKEN:
-    logging.error("TELEGRAM_BOT_TOKEN не задан в переменных окружения")
-    raise Exception("TELEGRAM_BOT_TOKEN обязателен")
+        function onScanFailure(error) {
+            // Можно выводить сообщения об ошибке или просто игнорировать
+            console.warn(`Ошибка сканирования: ${error}`);
+        }
 
-TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
-
-@app.route("/")
-def index():
-    """
-    Главная страница сканера.
-    Требуется передать параметр chat_id в query string.
-    Пример: https://yourdomain.com/?chat_id=123456789
-    """
-    chat_id = request.args.get("chat_id")
-    if not chat_id:
-        return "Не указан параметр chat_id", 400
-    return render_template("scanner.html", chat_id=chat_id)
-
-@app.route("/result", methods=["POST"])
-def result():
-    """
-    Получает результат сканирования (JSON с chat_id и result),
-    отправляет сообщение в Telegram через Bot API.
-    """
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "Нет переданных данных"}), 400
-
-    chat_id = data.get("chat_id")
-    qr_result = data.get("result")
-    if not chat_id or not qr_result:
-        return jsonify({"error": "Параметры chat_id и result обязательны"}), 400
-
-    send_url = f"{TELEGRAM_API_URL}/sendMessage"
-    payload = {
-        "chat_id": chat_id,
-        "text": f"Результат сканирования QR-кода:\n{qr_result}"
-    }
-    response = requests.post(send_url, json=payload)
-    if response.status_code != 200:
-        logging.error(f"Ошибка отправки сообщения: {response.text}")
-        return jsonify({"error": "Ошибка отправки сообщения в Telegram"}), 500
-
-    return jsonify({"status": "success"}), 200
-
-if __name__ == "__main__":
-    # Для разработки – запуск на 0.0.0.0:5000 с отладкой
-    app.run(host="0.0.0.0", port=5000, debug=True)
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: 250 }, false);
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
+</body>
+</html>
