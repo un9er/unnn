@@ -1,61 +1,92 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Сканер QR-кодов</title>
-    <!-- Подключаем html5-qrcode -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        #reader { width: 500px; margin: auto; }
-        h1 { text-align: center; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Сканер штрих- и QR-кодов</title>
+  <!-- Подключаем библиотеку html5-qrcode -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    #reader {
+      width: 600px;
+      margin: auto;
+      border: 1px solid #ccc;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+    .controls {
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Сканер QR-кодов</h1>
-    <div id="reader"></div>
-    <p id="result" style="text-align: center; font-size: 1.2em;"></p>
-    <script>
-        // Передаем chat_id из шаблона
-        const chatId = "{{ chat_id }}";
+  <h1>Сканер штрих- и QR-кодов</h1>
 
-        // Функция, вызываемая при успешном сканировании
-        function onScanSuccess(decodedText, decodedResult) {
-            console.log(`Сканирование успешно: ${decodedText}`);
-            document.getElementById("result").innerText = "Сканировано: " + decodedText;
-            // Останавливаем сканер
-            html5QrcodeScanner.clear().then(_ => {
-                // Отправляем результат на сервер
-                fetch("/result", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: chatId, result: decodedText })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        document.getElementById("result").innerText += "\nРезультат отправлен в Telegram.";
-                    } else {
-                        document.getElementById("result").innerText += "\nОшибка: " + data.error;
-                    }
-                })
-                .catch(error => {
-                    console.error("Ошибка:", error);
-                    document.getElementById("result").innerText += "\nОшибка при отправке результата.";
-                });
-            }).catch(error => {
-                console.error("Ошибка остановки сканера:", error);
-            });
-        }
+  <!-- Блок для сканера -->
+  <div id="reader"></div>
 
-        function onScanFailure(error) {
-            // Можно выводить сообщения об ошибке или просто игнорировать
-            console.warn(`Ошибка сканирования: ${error}`);
-        }
+  <!-- Результат сканирования -->
+  <div id="result"></div>
 
-        let html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", { fps: 10, qrbox: 250 }, false);
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-    </script>
+  <script>
+    // Получаем chat_id из URL, если он передан
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatId = urlParams.get('chat_id') || '';
+
+    // Настройки для более качественного сканирования
+    // fps: 30 — выше fps, быстрее обрабатывается видео
+    // disableFlip — отключаем зеркалирование, иногда улучшает точность
+    // experimentalFeatures — даём возможность искать коды в большей области, если нужно
+    const config = {
+      fps: 30,
+      qrbox: 300, 
+      aspectRatio: 1.0,
+      disableFlip: false,
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+      }
+    };
+
+    // При успешном сканировании
+    function onScanSuccess(decodedText, decodedResult) {
+      console.log("Сканировано:", decodedText);
+      document.getElementById("result").innerText = "Результат: " + decodedText;
+
+      // Останавливаем сканер
+      html5QrCodeScanner.clear()
+        .then(_ => {
+          console.log("Сканер остановлен.");
+
+          // Если нужно — отправляем результат на сервер:
+          // fetch("https://ваш_сервер/endpoint", {
+          //   method: "POST",
+          //   headers: { "Content-Type": "application/json" },
+          //   body: JSON.stringify({ chat_id: chatId, result: decodedText })
+          // })
+          // .then(resp => resp.json())
+          // .then(respData => {
+          //   console.log("Отправка на сервер:", respData);
+          // });
+          
+        })
+        .catch(err => console.error("Ошибка при остановке:", err));
+    }
+
+    // При неудачном сканировании
+    function onScanFailure(error) {
+      // Можно выводить в консоль или игнорировать
+      // console.warn("Ошибка сканирования:", error);
+    }
+
+    const html5QrCodeScanner = new Html5QrcodeScanner("reader", config, /* verbose= */ false);
+    html5QrCodeScanner.render(onScanSuccess, onScanFailure);
+  </script>
 </body>
 </html>
