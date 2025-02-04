@@ -1,176 +1,125 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Сканер штрих-/QR-кодов</title>
-  <!-- Библиотека html5-qrcode -->
+  <!-- Подключаем библиотеку html5-qrcode -->
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
-      margin: 0; padding: 0;
       font-family: Arial, sans-serif;
-      background: #f6f6f6;
+      margin: 0;
+      padding: 20px;
       text-align: center;
+      background-color: #f7f7f7;
     }
     h1 {
-      margin: 1em 0 0.5em 0;
+      margin: 10px 0;
     }
-    #reader-container {
-      position: relative;
-      margin: 0 auto;
-      max-width: 600px;
-      width: 90%;
-      background: #eee;
-    }
-    /* Родительский контейнер для html5-qrcode */
     #reader {
-      width: 100%;
-      height: auto;
+      width: 360px;
       margin: 0 auto;
-      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      position: relative;
     }
-    /* Полупрозрачная маска, которая будет создавать эффект рамки */
+    /* Оверлей-прицел */
     .scan-overlay {
+      border: 2px dashed #fa3c3c;
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none; /* чтобы клики шли "сквозь" оверлей */
+      top: 50px;
+      left: 30px;
+      width: 300px;
+      height: 200px;
+      pointer-events: none;
+      box-sizing: border-box;
     }
-    /* Пример статического "прицела" — 4 уголка */
-    .corner {
-      position: absolute;
-      border: 3px solid #0f0; /* зелёные уголки */
-      width: 30px;
-      height: 30px;
-    }
-    .top-left { top: 10%; left: 10%; border-right: none; border-bottom: none; }
-    .top-right { top: 10%; right: 10%; border-left: none; border-bottom: none; }
-    .bottom-left { bottom: 10%; left: 10%; border-right: none; border-top: none; }
-    .bottom-right { bottom: 10%; right: 10%; border-left: none; border-top: none; }
-
     #result {
-      margin: 1em;
+      margin-top: 15px;
       font-weight: bold;
       font-size: 1.2em;
     }
-    .controls {
-      margin: 1em;
-    }
-    button {
-      margin: 0 0.5em;
-      padding: 0.7em 1.2em;
-      font-size: 1em;
-      cursor: pointer;
-    }
     .hint {
+      margin-top: 5px;
+      color: #777;
       font-size: 0.9em;
-      color: #666;
-      margin: 0.5em;
     }
   </style>
 </head>
 <body>
-  <h1>Сканер штрих-/QR-кодов</h1>
-
-  <div id="reader-container">
-    <!-- html5-qrcode подгрузит в этот div видеопоток -->
-    <div id="reader"></div>
-
-    <!-- Полупрозрачная маска "рамки" + 4 уголка -->
-    <div class="scan-overlay">
-      <div class="corner top-left"></div>
-      <div class="corner top-right"></div>
-      <div class="corner bottom-left"></div>
-      <div class="corner bottom-right"></div>
-    </div>
+  <h1>Сканер кодов</h1>
+  <div id="reader">
+    <div class="scan-overlay"></div>
   </div>
-
   <div id="result"></div>
-
-  <div class="controls">
-    <button id="stopBtn">Остановить</button>
-    <button id="startBtn">Возобновить</button>
-  </div>
-
-  <p class="hint">
-    Наведите камеру на штрих-/QR-код так, чтобы он оказался в зелёной рамке.<br>
-    При успешном считывании результат отобразится выше.
-  </p>
+  <div class="hint">Наведите камеру на QR/штрих-код. Ожидаем заднюю камеру.</div>
 
   <script>
-    // Параметры для html5-qrcode
+    // Извлекаем chat_id из параметров URL (если используется)
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatId = urlParams.get('chat_id') || '';
+
+    // Укажите здесь URL вашего сервера, который примет результат
+    // и отправит его обратно в бота (через Telegram API).
+    // Например, если у вас есть Flask-роут "/scan_result"
+    // На GitHub Pages нельзя принимать POST, нужен внешний сервер.
+    const SERVER_URL = "https://example.com/scan_result";
+
+    // Конфигурация для html5-qrcode
+    // facingMode: { exact: "environment" } — требует заднюю камеру
+    // Если нет задней камеры, браузер выберет любую доступную.
     const config = {
-      fps: 20,
-      qrbox: 250, // размер квадрата сканирования
-      aspectRatio: 1.0,
-      disableFlip: false, // если true, отключает отражение
+      fps: 25,
+      qrbox: 250,
+      disableFlip: false,
+      videoConstraints: {
+        facingMode: { exact: "environment" }
+      },
       experimentalFeatures: {
-        // Если ваш браузер поддерживает BarcodeDetector, он будет использоваться
         useBarCodeDetectorIfSupported: true
       }
     };
 
-    // Ссылка на Html5QrcodeScanner (высокоуровневый интерфейс)
-    let scanner = null;
-
-    // Функция, вызываемая при успешном сканировании
+    // При успешном сканировании
     function onScanSuccess(decodedText, decodedResult) {
-      console.log("Scan result:", decodedText);
-      document.getElementById("result").innerText = "Результат сканирования: " + decodedText;
+      console.log("Сканировано:", decodedText);
+      const resDiv = document.getElementById("result");
+      resDiv.innerText = "Результат: " + decodedText;
 
-      // Пример: можно остановить сканер на одном считывании
-      // scanner.clear().then(() => {
-      //   console.log("Сканер остановлен.");
-      // });
-      
-      // Если нужно автоматом отправлять результат в ваш бот или на сервер:
-      // fetch("https://example.com/endpoint", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ result: decodedText })
-      // })
-      //   .then(resp => resp.json())
-      //   .then(respData => console.log("Отправлено на сервер:", respData))
-      //   .catch(err => console.error("Ошибка отправки:", err));
-    }
+      // Останавливаем скан
+      html5QrCodeScanner.clear().then(_ => {
+        console.log("Сканер остановлен.");
 
-    // Функция при неудачных кадрах
-    function onScanFailure(error) {
-      // Обычно можно просто игнорировать и не засорять консоль
-      // console.warn(error);
-    }
-
-    // Инициализация сканера
-    function initScanner() {
-      scanner = new Html5QrcodeScanner("reader", config, /* verbose= */ false);
-      scanner.render(onScanSuccess, onScanFailure);
-    }
-
-    // Обработчики кнопок "Остановить" и "Возобновить"
-    window.addEventListener("DOMContentLoaded", () => {
-      initScanner();
-      const stopBtn = document.getElementById("stopBtn");
-      const startBtn = document.getElementById("startBtn");
-
-      stopBtn.onclick = () => {
-        scanner.clear().then(() => {
-          console.log("Сканер остановлен вручную.");
-          document.getElementById("result").innerText = "Сканер остановлен.";
-        }).catch(err => console.error("Ошибка при остановке:", err));
-      };
-
-      startBtn.onclick = () => {
-        // Перезапустим
-        document.getElementById("result").innerText = "";
-        // scanner.render(...) перезапускать нельзя напрямую, 
-        // создадим новый объект
-        scanner.clear().then(() => {
-          // создаём заново
-          scanner = new Html5QrcodeScanner("reader", config, false);
-          scanner.render(onScanSuccess, onScanFailure);
+        // Отправляем результат на сервер (если нужно автопересылка в бота)
+        // Передаём chatId, decodedText
+        fetch(SERVER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            chat_id: chatId, 
+            result: decodedText 
+          })
+        })
+        .then(resp => resp.json())
+        .then(data => {
+          console.log("Результат отправлен на сервер:", data);
+          // Можно показать пользователю статус
+          // resDiv.innerText += "\nОтправлено боту!";
+        })
+        .catch(err => {
+          console.error("Ошибка при отправке на сервер:", err);
         });
-      };
-    });
+
+      }).catch(err => console.error("Ошибка при остановке:", err));
+    }
+
+    // При ошибке (неудачном сканировании)
+    function onScanFailure(error) {
+      // Можно игнорировать или отображать
+      // console.warn("Ошибка сканирования:", error);
+    }
+
+    // Создаём объект сканера
+    const html5QrCodeScanner = new Html5QrcodeScanner("reader", config, false);
+    html5QrCodeScanner.render(onScanSuccess, onScanFailure);
   </script>
 </body>
 </html>
