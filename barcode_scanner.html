@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>Сканер кодов</title>
-  <!-- Telegram WebApp JS для sendData() и close() -->
+  <!-- Подключаем Telegram WebApp JS для sendData() и close() -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- html5-qrcode -->
+  <!-- Подключаем html5-qrcode -->
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
@@ -54,8 +54,8 @@
     const urlParams = new URLSearchParams(window.location.search);
     const context = urlParams.get('context') || 'none';
     const chatId = urlParams.get('chat_id') || '';
-    console.log("Получены параметры:", {context, chatId});
-    // Конфигурация сканера – сразу задняя камера
+    console.log("Параметры URL:", { context, chatId });
+    // Настройки сканера – сразу задняя камера
     const config = {
       fps: 25,
       qrbox: 250,
@@ -66,7 +66,6 @@
       console.log("Сканирование успешно, результат:", decodedText);
       document.getElementById("result").innerText = "Результат: " + decodedText;
       html5QrcodeScanner.clear().then(() => {
-        // Форматируем строку: context|decodedText
         const dataToSend = context + "|" + decodedText;
         console.log("Отправляем данные в бот:", dataToSend);
         tg.sendData(dataToSend);
