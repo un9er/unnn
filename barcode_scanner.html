@@ -2,14 +2,16 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Сканер штрих-/QR-кодов</title>
-  <!-- Подключаем библиотеку html5-qrcode -->
+  <title>Сканер кодов</title>
+  <!-- Telegram WebApp JS (для Telegram.WebApp.close()) -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- html5-qrcode библиотека -->
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
+      margin: 0; 
+      padding: 0;
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
       text-align: center;
       background-color: #f7f7f7;
     }
@@ -17,11 +19,10 @@
       margin: 10px 0;
     }
     #reader {
-      width: 360px;
       margin: 0 auto;
+      width: 360px;
       position: relative;
     }
-    /* Оверлей-прицел */
     .scan-overlay {
       border: 2px dashed #fa3c3c;
       position: absolute;
@@ -35,41 +36,35 @@
     #result {
       margin-top: 15px;
       font-weight: bold;
-      font-size: 1.2em;
-    }
-    .hint {
-      margin-top: 5px;
-      color: #777;
-      font-size: 0.9em;
+      font-size: 1.1em;
     }
   </style>
 </head>
 <body>
-  <h1>Сканер кодов</h1>
+  <h1>Сканер штрих/QR</h1>
+
   <div id="reader">
+    <!-- Оверлей-прицел -->
     <div class="scan-overlay"></div>
   </div>
   <div id="result"></div>
-  <div class="hint">Наведите камеру на QR/штрих-код. Ожидаем заднюю камеру.</div>
 
   <script>
-    // Извлекаем chat_id из параметров URL (если используется)
+    // 1) Подключаем Telegram WebApp
+    const tg = window.Telegram.WebApp;
+
+    // 2) Извлекаем chat_id из параметров URL (если нужно)
     const urlParams = new URLSearchParams(window.location.search);
     const chatId = urlParams.get('chat_id') || '';
 
-    // Укажите здесь URL вашего сервера, который примет результат
-    // и отправит его обратно в бота (через Telegram API).
-    // Например, если у вас есть Flask-роут "/scan_result"
-    // На GitHub Pages нельзя принимать POST, нужен внешний сервер.
+    // 3) URL вашего сервера, который примет результат и сделает sendMessage
     const SERVER_URL = "https://example.com/scan_result";
 
-    // Конфигурация для html5-qrcode
-    // facingMode: { exact: "environment" } — требует заднюю камеру
-    // Если нет задней камеры, браузер выберет любую доступную.
+    // 4) Настройки html5-qrcode — сразу запускаем заднюю камеру
     const config = {
       fps: 25,
       qrbox: 250,
-      disableFlip: false,
+      // Указываем камеру environment
       videoConstraints: {
         facingMode: { exact: "environment" }
       },
@@ -78,48 +73,56 @@
       }
     };
 
-    // При успешном сканировании
+    // 5) Функция при успешном сканировании
     function onScanSuccess(decodedText, decodedResult) {
       console.log("Сканировано:", decodedText);
-      const resDiv = document.getElementById("result");
-      resDiv.innerText = "Результат: " + decodedText;
+      document.getElementById("result").innerText = "Результат: " + decodedText;
 
       // Останавливаем скан
       html5QrCodeScanner.clear().then(_ => {
         console.log("Сканер остановлен.");
 
-        // Отправляем результат на сервер (если нужно автопересылка в бота)
-        // Передаём chatId, decodedText
+        // Автоматически отправляем результат на ваш сервер,
+        // чтобы тот переслал его в бота
         fetch(SERVER_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            chat_id: chatId, 
-            result: decodedText 
+          body: JSON.stringify({
+            chat_id: chatId,
+            result: decodedText
           })
         })
         .then(resp => resp.json())
         .then(data => {
-          console.log("Результат отправлен на сервер:", data);
-          // Можно показать пользователю статус
-          // resDiv.innerText += "\nОтправлено боту!";
+          console.log("Отправили на сервер, ответ:", data);
+          // Через короткую задержку закрываем WebApp
+          setTimeout(() => {
+            tg.close(); // Закрываем мини-приложение, возвращаем пользователя в бот
+          }, 500);
         })
         .catch(err => {
-          console.error("Ошибка при отправке на сервер:", err);
+          console.error("Ошибка при отправке:", err);
+          // Даже если ошибка, можно закрыть или предложить повтор
+          tg.close();
         });
 
-      }).catch(err => console.error("Ошибка при остановке:", err));
+      }).catch(err => {
+        console.error("Ошибка при остановке:", err);
+        tg.close();
+      });
     }
 
-    // При ошибке (неудачном сканировании)
+    // 6) Функция при неудачном сканировании (можно игнорировать)
     function onScanFailure(error) {
-      // Можно игнорировать или отображать
       // console.warn("Ошибка сканирования:", error);
     }
 
-    // Создаём объект сканера
-    const html5QrCodeScanner = new Html5QrcodeScanner("reader", config, false);
+    // 7) Создаём объект сканера и запускаем
+    const html5QrCodeScanner = new Html5QrcodeScanner("reader", config, /*verbose=*/false);
     html5QrCodeScanner.render(onScanSuccess, onScanFailure);
+
+    // Расширяем WebApp (на весь экран), если нужно
+    tg.expand();
   </script>
 </body>
 </html>
