@@ -7,7 +7,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
 # Получаем Telegram Bot Token из переменных окружения
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN = os.environ.get("8151880981:AAEayzwTCLGVCN26GqTg0Tnn5MgxwMeJ9mc")
 if not TELEGRAM_BOT_TOKEN:
     logging.error("TELEGRAM_BOT_TOKEN не задан в переменных окружения")
     raise Exception("TELEGRAM_BOT_TOKEN обязателен")
