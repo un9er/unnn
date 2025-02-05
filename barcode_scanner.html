@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <title>Сканер кодов</title>
   <!-- Подключаем Telegram WebApp JS -->
-  <script src="https://telegram.org/js/telegram-webapp.js"></script>
-  <!-- Подключаем html5-qrcode (минимизированную версию) -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Подключаем html5-qrcode -->
   <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
   <style>
     body {
@@ -19,7 +19,8 @@
       margin: 10px 0;
     }
     #reader {
-      width: 300px;
+      width: 100%;
+      max-width: 400px;
       margin: 0 auto;
     }
     #result {
@@ -34,61 +35,54 @@
   <div id="reader"></div>
   <div id="result"></div>
   <script>
-    // Инициализация Telegram WebApp
+    console.log("Сканер запущен.");
+
     const tg = window.Telegram.WebApp;
     tg.expand();
-    
-    // Получаем параметры URL: context и chat_id
+
+    // Извлекаем параметры URL: context и chat_id
     const urlParams = new URLSearchParams(window.location.search);
     const context = urlParams.get('context') || 'none';
     const chatId = urlParams.get('chat_id') || '';
+
     console.log("Параметры URL:", { context, chatId });
-    
-    // Функция при успешном сканировании
-    function onScanSuccess(decodedText, decodedResult) {
-      console.log("Сканирование успешно. Результат:", decodedText);
+
+    function onScanSuccess(decodedText) {
+      console.log("Штрих-код распознан:", decodedText);
       document.getElementById("result").innerText = "Результат: " + decodedText;
-      
-      // Формируем строку для отправки: "context|barcode"
-      const dataToSend = context + "|" + decodedText;
-      console.log("Отправляем данные в бот:", dataToSend);
-      
-      // Отправляем данные в бот через Telegram WebApp API
+
+      // Отправляем данные в Telegram WebApp API
+      const dataToSend = `${context}|${decodedText}`;
+      console.log("Отправляем в бота:", dataToSend);
       tg.sendData(dataToSend);
-      
-      // Останавливаем сканер и закрываем WebApp через 1 секунду
+
+      // Останавливаем сканер и закрываем WebApp
       html5QrcodeScanner.clear().then(() => {
         setTimeout(() => {
           console.log("Закрываем WebApp.");
           tg.close();
-        }, 1000);
+        }, 1500);
       }).catch(error => {
-        console.error("Ошибка при остановке сканера:", error);
-        setTimeout(() => {
-          tg.close();
-        }, 1000);
+        console.error("Ошибка остановки сканера:", error);
+        tg.close();
       });
     }
-    
-    // Функция обработки ошибок сканирования (для отладки)
+
     function onScanFailure(error) {
       console.warn("Ошибка сканирования:", error);
     }
-    
-    // Инициализация сканера
+
     const html5QrcodeScanner = new Html5QrcodeScanner(
       "reader",
       {
-        fps: 10,         // частота кадров
-        qrbox: 250,      // размер окна сканирования в пикселях
+        fps: 10,
+        qrbox: 250,
         videoConstraints: { facingMode: { exact: "environment" } }
       },
       false
     );
-    
-    // Запуск сканера
+
     html5QrcodeScanner.render(onScanSuccess, onScanFailure);
   </script>
 </body>
 </html>
-
