@@ -1,59 +1,89 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    // ... existing code ...
+  <meta charset="UTF-8" />
+  <title>Сканер кодов</title>
+  <!-- Подключаем Telegram WebApp JS -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Подключаем html5-qrcode -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background-color: #f7f7f7;
+    }
+    h1 {
+      margin: 10px 0;
+    }
+    #reader {
+      width: 360px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .scan-overlay {
+      border: 2px dashed #fa3c3c;
+      position: absolute;
+      top: 50px;
+      left: 30px;
+      width: 300px;
+      height: 200px;
+      pointer-events: none;
+      box-sizing: border-box;
+    }
+    #result {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+  </style>
 </head>
 <body>
-    // ... existing code ...
-    <script>
-        console.log("Сканер запущен.");
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        
-        // Извлекаем параметры URL: context и chat_id
-        const urlParams = new URLSearchParams(window.location.search);
-        const context = urlParams.get('context') || 'none';
-        const chatId = urlParams.get('chat_id') || '';
-        console.log("Параметры URL:", { context, chatId });
-        
-        // Конфигурация сканера
-        const config = {
-            fps: 25,
-            qrbox: 250,
-            videoConstraints: { facingMode: { exact: "environment" } },
-            experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-        };
-        
-        function onScanSuccess(decodedText, decodedResult) {
-            console.log("Сканирование успешно, результат:", decodedText);
-            document.getElementById("result").innerText = "Результат: " + decodedText;
-            
-            // Останавливаем сканер
-            html5QrcodeScanner.clear().then(() => {
-                const dataToSend = context === 'none' ? decodedText : context + "|" + decodedText;
-                console.log("Отправляем данные в бот:", dataToSend);
-                
-                // Отправляем данные в бот
-                tg.sendData(dataToSend);
-                
-                // Закрываем WebApp после небольшой задержки
-                setTimeout(() => {
-                    console.log("Закрываем WebApp");
-                    tg.close();
-                }, 1000);
-            }).catch(err => {
-                console.error("Ошибка остановки сканера:", err);
-                tg.close();
-            });
-        }
-        
-        function onScanFailure(error) {
-            // console.warn("Ошибка сканирования:", error);
-        }
-        
-        // Инициализация и запуск сканера
-        const html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-    </script>
+  <h1>Сканирование</h1>
+  <div id="reader">
+    <div class="scan-overlay"></div>
+  </div>
+  <div id="result"></div>
+  <script>
+    console.log("Сканер запущен.");
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    // Извлекаем параметры URL: context и chat_id
+    const urlParams = new URLSearchParams(window.location.search);
+    const context = urlParams.get('context') || 'none';
+    const chatId = urlParams.get('chat_id') || '';
+    console.log("Параметры URL:", { context, chatId });
+    // Конфигурация сканера – сразу задняя камера
+    const config = {
+      fps: 25,
+      qrbox: 250,
+      videoConstraints: { facingMode: { exact: "environment" } },
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+    };
+    function onScanSuccess(decodedText, decodedResult) {
+      console.log("Сканирование успешно, результат:", decodedText);
+      document.getElementById("result").innerText = "Результат: " + decodedText;
+      html5QrcodeScanner.clear().then(() => {
+        const dataToSend = context + "|" + decodedText;
+        console.log("Отправляем данные в бот:", dataToSend);
+        tg.sendData(dataToSend);
+        // Увеличенный таймаут, чтобы данные точно отправились (1500 мс)
+        setTimeout(() => {
+          console.log("Закрываем WebApp.");
+          tg.close();
+        }, 1500);
+      }).catch(err => {
+        console.error("Ошибка остановки сканера:", err);
+        tg.close();
+      });
+    }
+    function onScanFailure(error) {
+      console.warn("Ошибка сканирования:", error);
+    }
+    const html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+  </script>
 </body>
 </html>
