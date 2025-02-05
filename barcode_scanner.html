@@ -2,10 +2,11 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Сканер штрих-кодов</title>
   <!-- Подключаем Telegram WebApp JS -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Подключаем html5-qrcode (минимизированную версию) -->
+  <!-- Подключаем html5-qrcode -->
   <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
   <style>
     body {
@@ -18,21 +19,13 @@
     h1 {
       margin: 10px 0;
     }
+    /* Задаём размеры для контейнера сканера */
     #reader {
       width: 360px;
+      height: 300px;
       margin: 0 auto;
+      border: 1px solid #ccc;
       position: relative;
-    }
-    /* Можно добавить оверлей для визуального эффекта */
-    .scan-overlay {
-      border: 2px dashed #fa3c3c;
-      position: absolute;
-      top: 50px;
-      left: 30px;
-      width: 300px;
-      height: 200px;
-      pointer-events: none;
-      box-sizing: border-box;
     }
     #result {
       margin-top: 15px;
@@ -43,10 +36,7 @@
 </head>
 <body>
   <h1>Сканирование штрих-кода</h1>
-  <div id="reader">
-    <!-- Если требуется оверлей, можно раскомментировать следующий div -->
-    <!-- <div class="scan-overlay"></div> -->
-  </div>
+  <div id="reader"></div>
   <div id="result"></div>
   <script>
     console.log("Сканер запущен.");
@@ -54,7 +44,7 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // Извлекаем параметры URL: context и chat_id (например, context=new)
+    // Извлекаем параметры URL: context и chat_id
     const urlParams = new URLSearchParams(window.location.search);
     const context = urlParams.get('context') || 'none';
     const chatId = urlParams.get('chat_id') || '';
@@ -65,23 +55,18 @@
       fps: 10,
       qrbox: 250,
       videoConstraints: {
-        facingMode: { exact: "environment" }
-      },
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true
+        facingMode: "environment"
       }
     };
 
-    // Функция успешного считывания
+    // Функция успешного считывания штрих-кода
     function onScanSuccess(decodedText, decodedResult) {
       console.log("Сканирование успешно, результат:", decodedText);
       document.getElementById("result").innerText = "Результат: " + decodedText;
       html5QrcodeScanner.clear().then(() => {
-        // Формируем строку: контекст и штрих-код через разделитель "|"
         const dataToSend = context + "|" + decodedText;
         console.log("Отправляем данные в бот:", dataToSend);
         tg.sendData(dataToSend);
-        // Немного задержки, чтобы данные точно отправились, затем закрываем WebApp
         setTimeout(() => {
           console.log("Закрываем WebApp.");
           tg.close();
@@ -97,7 +82,7 @@
       console.warn("Ошибка сканирования:", error);
     }
 
-    // Инициализируем и запускаем html5QrcodeScanner
+    // Инициализация и запуск html5QrcodeScanner
     const html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
     html5QrcodeScanner.render(onScanSuccess, onScanFailure);
   </script>
