@@ -65,19 +65,19 @@
     function onScanSuccess(decodedText, decodedResult) {
       console.log("Сканирование успешно, результат:", decodedText);
       document.getElementById("result").innerText = "Результат: " + decodedText;
-      html5QrcodeScanner.clear().then(() => {
-        const dataToSend = context + "|" + decodedText;
-        console.log("Отправляем данные в бот:", dataToSend);
-        tg.sendData(dataToSend);
-        // Увеличенный таймаут, чтобы данные точно отправились
-        setTimeout(() => {
-          console.log("Закрываем WebApp.");
-          tg.close();
-        }, 1000);
-      }).catch(err => {
-        console.error("Ошибка остановки сканера:", err);
-        tg.close();
+      const dataToSend = context + "|" + decodedText;
+      console.log("Отправляем данные в бот:", dataToSend);
+      // Отправляем данные боту сразу
+      tg.sendData(dataToSend);
+      // После отправки очищаем сканер (если возникает ошибка – логируем) и закрываем WebApp
+      html5QrcodeScanner.clear().catch(err => {
+         console.error("Ошибка при остановке сканера:", err);
       });
+      // Закрываем WebApp через 1 секунду для гарантии отправки данных
+      setTimeout(() => {
+         console.log("Закрываем WebApp.");
+         tg.close();
+      }, 1000);
     }
     function onScanFailure(error) {
       console.warn("Ошибка сканирования:", error);
@@ -87,3 +87,4 @@
   </script>
 </body>
 </html>
+
