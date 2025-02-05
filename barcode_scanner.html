@@ -1,167 +1,154 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Сканер кодов</title>
-    <!-- Подключаем Telegram WebApp JS -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Подключаем html5-qrcode -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            text-align: center;
-            font-family: Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color, #f7f7f7);
-            color: var(--tg-theme-text-color, #000000);
-        }
-        
-        h1 {
-            margin: 10px 0;
-            font-size: 1.5em;
-        }
-        
-        #reader {
-            width: 100%;
-            max-width: 360px;
-            margin: 0 auto;
-            position: relative;
-        }
-        
-        .scan-overlay {
-            border: 2px dashed var(--tg-theme-button-color, #fa3c3c);
-            position: absolute;
-            top: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 200px;
-            pointer-events: none;
-            box-sizing: border-box;
-            z-index: 1000;
-        }
-        
-        #result {
-            margin-top: 15px;
-            font-weight: bold;
-            font-size: 1.1em;
-            color: var(--tg-theme-text-color, #000000);
-        }
-        
-        /* Стили для кнопок html5-qrcode */
-        button {
-            background-color: var(--tg-theme-button-color, #3390ec) !important;
-            color: var(--tg-theme-button-text-color, #ffffff) !important;
-            border: none !important;
-            padding: 8px 16px !important;
-            border-radius: 8px !important;
-            cursor: pointer !important;
-            margin: 5px !important;
-        }
-        
-        /* Скрываем ненужные элементы */
-        select {
-            display: none !important;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Сканер кодов</title>
+  <!-- Подключаем Telegram WebApp JS -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Подключаем html5-qrcode -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background-color: var(--tg-theme-bg-color, #f7f7f7);
+      color: var(--tg-theme-text-color, #000000);
+    }
+    h1 {
+      margin: 10px 0;
+      font-size: 1.5em;
+    }
+    #reader {
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .scan-overlay {
+      border: 2px dashed var(--tg-theme-button-color, #fa3c3c);
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      height: 200px;
+      pointer-events: none;
+      box-sizing: border-box;
+      z-index: 1000;
+    }
+    #result {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 1.1em;
+      color: var(--tg-theme-text-color, #000000);
+    }
+    button {
+      background-color: var(--tg-theme-button-color, #3390ec) !important;
+      color: var(--tg-theme-button-text-color, #ffffff) !important;
+      border: none !important;
+      padding: 8px 16px !important;
+      border-radius: 8px !important;
+      cursor: pointer !important;
+      margin: 5px !important;
+    }
+    select {
+      display: none !important;
+    }
+  </style>
 </head>
 <body>
-    <h1>Сканирование</h1>
-    <div id="reader">
-        <div class="scan-overlay"></div>
-    </div>
-    <div id="result"></div>
+  <h1>Сканирование</h1>
+  <div id="reader">
+    <div class="scan-overlay"></div>
+  </div>
+  <div id="result"></div>
+  <script>
+    console.log("Сканер запущен");
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.enableClosingConfirmation();
+
+    // Проверка и логирование initData
+    console.log("Telegram WebApp initDataUnsafe:", tg.initDataUnsafe);
     
-    <script>
-        console.log("Сканер запущен");
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.enableClosingConfirmation();
-        
-        // Извлекаем параметры URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const context = urlParams.get('context') || 'none';
-        const chatId = urlParams.get('chat_id') || '';
-        console.log("Параметры URL:", { context, chatId });
-        
-        // Конфигурация сканера
-        const config = {
-            fps: 30,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0,
-            videoConstraints: {
-                facingMode: { exact: "environment" }
-            },
-            experimentalFeatures: {
-                useBarCodeDetectorIfSupported: true
-            },
-            rememberLastUsedCamera: true,
-            supportedScanTypes: [
-                Html5QrcodeScanType.SCAN_TYPE_CAMERA,
-                Html5QrcodeScanType.SCAN_TYPE_FILE
-            ]
-        };
-        
-        let lastScannedCode = null;
-        let lastScannedTime = 0;
-        
-        function onScanSuccess(decodedText, decodedResult) {
-            // Предотвращаем повторное сканирование того же кода
-            const currentTime = Date.now();
-            if (lastScannedCode === decodedText && currentTime - lastScannedTime < 2000) {
-                return;
-            }
-            
-            lastScannedCode = decodedText;
-            lastScannedTime = currentTime;
-            
-            console.log("Сканирование успешно:", decodedText);
-            document.getElementById("result").innerText = "Результат: " + decodedText;
-            
-            // Останавливаем сканер
-            html5QrcodeScanner.clear().then(() => {
-                // Формируем данные для отправки:
-                // Если контекст не "none", добавляем префикс, например "new|<код>"
-                const dataToSend = context === 'none' ? decodedText : `${context}|${decodedText}`;
-                console.log("Отправляем данные в бот:", dataToSend);
-                
-                try {
-                    tg.sendData(dataToSend);
-                    document.getElementById("result").innerText = "Данные отправлены!";
-                    // Закрываем WebApp после небольшой задержки
-                    setTimeout(() => {
-                        console.log("Закрываем WebApp");
-                        tg.close();
-                    }, 1000);
-                } catch (error) {
-                    console.error("Ошибка отправки данных:", error);
-                    document.getElementById("result").innerText = "Ошибка отправки данных";
-                }
-            }).catch(err => {
-                console.error("Ошибка остановки сканера:", err);
-                tg.close();
-            });
+    // Извлекаем параметры URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const context = urlParams.get('context') || 'none';
+    const chatId = urlParams.get('chat_id') || '';
+    console.log("Параметры URL:", { context, chatId });
+
+    const config = {
+      fps: 30,
+      qrbox: { width: 250, height: 250 },
+      aspectRatio: 1.0,
+      videoConstraints: {
+        facingMode: { exact: "environment" }
+      },
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+      },
+      rememberLastUsedCamera: true,
+      supportedScanTypes: [
+        Html5QrcodeScanType.SCAN_TYPE_CAMERA,
+        Html5QrcodeScanType.SCAN_TYPE_FILE
+      ]
+    };
+
+    let lastScannedCode = null;
+    let lastScannedTime = 0;
+
+    function onScanSuccess(decodedText, decodedResult) {
+      const currentTime = Date.now();
+      if (lastScannedCode === decodedText && currentTime - lastScannedTime < 2000) {
+        return;
+      }
+      lastScannedCode = decodedText;
+      lastScannedTime = currentTime;
+      console.log("Сканирование успешно:", decodedText);
+      document.getElementById("result").innerText = "Результат: " + decodedText;
+      
+      html5QrcodeScanner.clear().then(() => {
+        // Формируем данные для отправки: добавляем префикс если context не "none"
+        const dataToSend = context === 'none' ? decodedText : `${context}|${decodedText}`;
+        console.log("Отправляем данные через tg.sendData:", dataToSend);
+        try {
+          tg.sendData(dataToSend);
+          console.log("Данные успешно отправлены через tg.sendData");
+          document.getElementById("result").innerText = "Данные отправлены!";
+          setTimeout(() => {
+            console.log("Закрываем WebApp");
+            tg.close();
+          }, 1000);
+        } catch (error) {
+          console.error("Ошибка при вызове tg.sendData:", error);
+          document.getElementById("result").innerText = "Ошибка отправки данных";
         }
-        
-        function onScanFailure(error) {
-            // Можно игнорировать ошибки сканирования
-        }
-        
-        // Создаем и запускаем сканер
-        const html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader",
-            config,
-            /* verbose= */ false
-        );
-        
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
-            console.error('Ошибка:', msg, 'Строка:', lineNo, 'Колонка:', columnNo);
-            return false;
-        };
-    </script>
+      }).catch(err => {
+        console.error("Ошибка остановки сканера:", err);
+        tg.close();
+      });
+    }
+
+    function onScanFailure(error) {
+      // Логируем ошибки сканирования (если нужно)
+      console.warn("Ошибка сканирования:", error);
+    }
+
+    const html5QrcodeScanner = new Html5QrcodeScanner(
+      "reader",
+      config,
+      false
+    );
+
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      console.error('Глобальная ошибка:', msg, 'Строка:', lineNo, 'Колонка:', columnNo);
+      return false;
+    };
+  </script>
 </body>
 </html>
