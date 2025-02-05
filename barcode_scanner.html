@@ -19,18 +19,34 @@
     h1 {
       margin: 10px 0;
     }
-    /* Задаём размеры для контейнера сканера */
     #reader {
-      width: 360px;
-      height: 300px;
-      margin: 0 auto;
+      width: 100%;
+      max-width: 400px;
+      height: 320px;
+      margin: 10px auto;
       border: 1px solid #ccc;
       position: relative;
+      background: #000;
     }
     #result {
       margin-top: 15px;
       font-weight: bold;
       font-size: 1.1em;
+    }
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    #retry {
+      display: none;
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #fa3c3c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -38,53 +54,69 @@
   <h1>Сканирование штрих-кода</h1>
   <div id="reader"></div>
   <div id="result"></div>
+  <div class="error" id="errorMsg"></div>
+  <button id="retry" onclick="location.reload()">Обновить</button>
+
   <script>
     console.log("Сканер запущен.");
-    // Инициализация Telegram WebApp
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // Извлекаем параметры URL: context и chat_id
     const urlParams = new URLSearchParams(window.location.search);
     const context = urlParams.get('context') || 'none';
     const chatId = urlParams.get('chat_id') || '';
+
     console.log("Параметры URL:", { context, chatId });
 
-    // Конфигурация сканера: fps, размер области сканирования, выбор задней камеры
-    const config = {
-      fps: 10,
-      qrbox: 250,
-      videoConstraints: {
-        facingMode: "environment"
+    async function requestCameraPermission() {
+      try {
+        console.log("Запрашиваем доступ к камере...");
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        console.log("Доступ к камере получен!");
+        startScanner();
+      } catch (err) {
+        console.error("Ошибка доступа к камере:", err);
+        document.getElementById("errorMsg").innerText = "Ошибка: Доступ к камере запрещён.";
+        document.getElementById("retry").style.display = "block";
       }
-    };
+    }
 
-    // Функция успешного считывания штрих-кода
-    function onScanSuccess(decodedText, decodedResult) {
-      console.log("Сканирование успешно, результат:", decodedText);
-      document.getElementById("result").innerText = "Результат: " + decodedText;
-      html5QrcodeScanner.clear().then(() => {
-        const dataToSend = context + "|" + decodedText;
-        console.log("Отправляем данные в бот:", dataToSend);
-        tg.sendData(dataToSend);
-        setTimeout(() => {
-          console.log("Закрываем WebApp.");
+    function startScanner() {
+      const config = {
+        fps: 10,
+        qrbox: 250,
+        videoConstraints: {
+          facingMode: "environment"
+        }
+      };
+
+      function onScanSuccess(decodedText, decodedResult) {
+        console.log("Сканирование успешно:", decodedText);
+        document.getElementById("result").innerText = "Результат: " + decodedText;
+        html5QrcodeScanner.clear().then(() => {
+          const dataToSend = context + "|" + decodedText;
+          console.log("Отправляем данные в бот:", dataToSend);
+          tg.sendData(dataToSend);
+          setTimeout(() => {
+            console.log("Закрываем WebApp.");
+            tg.close();
+          }, 1000);
+        }).catch(err => {
+          console.error("Ошибка остановки сканера:", err);
           tg.close();
-        }, 1000);
-      }).catch(err => {
-        console.error("Ошибка остановки сканера:", err);
-        tg.close();
-      });
+        });
+      }
+
+      function onScanFailure(error) {
+        console.warn("Ошибка сканирования:", error);
+      }
+
+      const html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
+      html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     }
 
-    // Функция обработки ошибок сканирования
-    function onScanFailure(error) {
-      console.warn("Ошибка сканирования:", error);
-    }
-
-    // Инициализация и запуск html5QrcodeScanner
-    const html5QrcodeScanner = new Html5QrcodeScanner("reader", config, false);
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    // Запрашиваем разрешение на камеру перед запуском сканера
+    requestCameraPermission();
   </script>
 </body>
 </html>
