@@ -123,12 +123,15 @@
             // Останавливаем сканер
             html5QrcodeScanner.clear().then(() => {
                 // Формируем данные для отправки
-                const dataToSend = context === 'none' ? decodedText : context + "|" + decodedText;
+                const dataToSend = context === 'none' ? decodedText : `${context}|${decodedText}`;
                 console.log("Отправляем данные в бот:", dataToSend);
                 
                 try {
                     // Отправляем данные в бот
                     tg.sendData(dataToSend);
+                    
+                    // Показываем сообщение об успехе
+                    document.getElementById("result").innerText = "Данные отправлены!";
                     
                     // Закрываем WebApp после небольшой задержки
                     setTimeout(() => {
@@ -167,4 +170,4 @@
         };
     </script>
 </body>
-</html>
+</html> 
